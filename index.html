@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Alex Rivera — Video Editor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --black: #0a0a0a;
+      --white: #f0ece4;
+      --cream: #e8e2d5;
+      --accent: #ff3c00;
+      --accent2: #ffc300;
+      --grey: #1a1a1a;
+      --muted: #5a5a5a;
+      --font-display: 'Bebas Neue', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--black);
+      color: var(--white);
+      font-family: var(--font-body);
+      font-weight: 300;
+      overflow-x: hidden;
+      cursor: none;
+    }
+
+    /* ── CUSTOM CURSOR ── */
+    .cursor {
+      width: 12px; height: 12px;
+      background: var(--accent);
+      border-radius: 50%;
+      position: fixed; top: 0; left: 0;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: transform 0.15s ease, width 0.3s, height 0.3s, background 0.3s;
+    }
+    .cursor-ring {
+      width: 36px; height: 36px;
+      border: 1px solid rgba(255,60,0,0.5);
+      border-radius: 50%;
+      position: fixed; top: 0; left: 0;
+      pointer-events: none;
+      z-index: 9998;
+      transform: translate(-50%, -50%);
+      transition: transform 0.35s ease, width 0.3s, height 0.3s;
+    }
+    body:hover .cursor { opacity: 1; }
+
+    /* ── NOISE OVERLAY ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 1000;
+      opacity: 0.6;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 24px 48px;
+      z-index: 100;
+      mix-blend-mode: normal;
+    }
+    nav::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(to bottom, rgba(10,10,10,0.9), transparent);
+      pointer-events: none;
+    }
+    .nav-logo {
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+      letter-spacing: 0.05em;
+      color: var(--white);
+      text-decoration: none;
+      position: relative; z-index: 1;
+    }
+    .nav-logo span { color: var(--accent); }
+    .nav-links {
+      display: flex; gap: 40px; list-style: none;
+      position: relative; z-index: 1;
+    }
+    .nav-links a {
+      color: var(--white);
+      text-decoration: none;
+      font-size: 0.8rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      opacity: 0.6;
+      transition: opacity 0.3s;
+    }
+    .nav-links a:hover { opacity: 1; }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-left {
+      display: flex; flex-direction: column;
+      justify-content: flex-end;
+      padding: 120px 48px 80px;
+      position: relative; z-index: 2;
+    }
+    .hero-eyebrow {
+      font-size: 0.75rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 24px;
+      opacity: 0;
+      animation: fadeUp 0.8s 0.2s forwards;
+    }
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: clamp(5rem, 10vw, 10rem);
+      line-height: 0.9;
+      letter-spacing: 0.01em;
+      color: var(--white);
+      opacity: 0;
+      animation: fadeUp 0.9s 0.4s forwards;
+    }
+    .hero-title .line-accent { color: var(--accent); display: block; }
+    .hero-subtitle {
+      margin-top: 32px;
+      font-size: 1rem;
+      font-weight: 300;
+      color: rgba(240,236,228,0.55);
+      max-width: 380px;
+      line-height: 1.7;
+      opacity: 0;
+      animation: fadeUp 0.9s 0.6s forwards;
+    }
+    .hero-cta {
+      margin-top: 48px;
+      display: flex; gap: 20px; align-items: center;
+      opacity: 0;
+      animation: fadeUp 0.9s 0.8s forwards;
+    }
+    .btn-primary {
+      display: inline-block;
+      background: var(--accent);
+      color: var(--white);
+      padding: 14px 32px;
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      text-decoration: none;
+      transition: background 0.3s, transform 0.2s;
+      clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+    }
+    .btn-primary:hover { background: #e03500; transform: translateY(-2px); }
+    .btn-ghost {
+      color: var(--white);
+      text-decoration: none;
+      font-size: 0.8rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      opacity: 0.5;
+      border-bottom: 1px solid currentColor;
+      padding-bottom: 2px;
+      transition: opacity 0.3s;
+    }
+    .btn-ghost:hover { opacity: 1; }
+
+    .hero-right {
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-reel {
+      position: absolute; inset: 0;
+      background: var(--grey);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .hero-reel::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+    }
+    .reel-grid {
+      position: absolute; inset: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr 1fr;
+      gap: 2px;
+      opacity: 0;
+      animation: fadeIn 1.2s 1s forwards;
+    }
+    .reel-cell {
+      background: #111;
+      position: relative;
+      overflow: hidden;
+    }
+    .reel-cell::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,60,0,0.08), transparent);
+    }
+    .reel-cell:nth-child(1) { background: #141414; }
+    .reel-cell:nth-child(2) { background: #0f0f0f; }
+    .reel-cell:nth-child(3) { background: #121212; }
+    .reel-cell:nth-child(4) { background: #161616; }
+    .reel-cell:nth-child(5) { background: #0e0e0e; grid-column: 1 / 3; }
+    .play-btn {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 72px; height: 72px;
+      border: 1.5px solid rgba(240,236,228,0.3);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      z-index: 5;
+      transition: border-color 0.3s, transform 0.3s;
+      animation: fadeIn 1s 1.4s both;
+    }
+    .play-btn:hover { border-color: var(--accent); transform: translate(-50%,-50%) scale(1.08); }
+    .play-btn svg { fill: var(--white); margin-left: 4px; }
+    .hero-ticker {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: var(--accent);
+      padding: 10px 0;
+      overflow: hidden;
+      z-index: 10;
+    }
+    .ticker-inner {
+      display: flex; gap: 60px;
+      white-space: nowrap;
+      animation: ticker 18s linear infinite;
+    }
+    .ticker-item {
+      font-family: var(--font-display);
+      font-size: 0.9rem;
+      letter-spacing: 0.15em;
+      color: var(--black);
+      display: flex; align-items: center; gap: 20px;
+    }
+    .ticker-item::after { content: '✦'; opacity: 0.6; }
+
+    /* ── STATS ── */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border-top: 1px solid #1f1f1f;
+      border-bottom: 1px solid #1f1f1f;
+    }
+    .stat-item {
+      padding: 56px 48px;
+      border-right: 1px solid #1f1f1f;
+      opacity: 0;
+      animation: fadeUp 0.8s forwards;
+    }
+    .stat-item:last-child { border-right: none; }
+    .stat-item:nth-child(1) { animation-delay: 0.1s; }
+    .stat-item:nth-child(2) { animation-delay: 0.2s; }
+    .stat-item:nth-child(3) { animation-delay: 0.3s; }
+    .stat-item:nth-child(4) { animation-delay: 0.4s; }
+    .stat-num {
+      font-family: var(--font-display);
+      font-size: 4rem;
+      line-height: 1;
+      letter-spacing: -0.01em;
+    }
+    .stat-num span { color: var(--accent); }
+    .stat-label {
+      margin-top: 8px;
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      opacity: 0.4;
+    }
+
+    /* ── SECTION BASE ── */
+    section { padding: 120px 48px; }
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 72px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid #1f1f1f;
+    }
+    .section-label {
+      font-size: 0.7rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-family: var(--font-display);
+      font-size: clamp(3rem, 6vw, 5.5rem);
+      line-height: 0.95;
+      letter-spacing: 0.01em;
+    }
+    .section-count {
+      font-family: var(--font-display);
+      font-size: 6rem;
+      color: #1a1a1a;
+      line-height: 1;
+    }
+
+    /* ── WORK / PORTFOLIO ── */
+    #work { background: var(--black); }
+    .work-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px;
+    }
+    .work-item {
+      position: relative;
+      aspect-ratio: 16/10;
+      background: var(--grey);
+      overflow: hidden;
+      cursor: pointer;
+      group: true;
+    }
+    .work-item.wide { grid-column: 1 / 3; aspect-ratio: 21/9; }
+    .work-thumb {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-display);
+      font-size: 6rem;
+      color: #1f1f1f;
+      transition: transform 0.6s cubic-bezier(0.25,0.46,0.45,0.94);
+    }
+    .work-item:nth-child(1) .work-thumb { background: linear-gradient(135deg, #111 0%, #1a1a1a 100%); }
+    .work-item:nth-child(2) .work-thumb { background: linear-gradient(135deg, #0e0e0e 0%, #151515 100%); }
+    .work-item:nth-child(3) .work-thumb { background: linear-gradient(135deg, #121212 0%, #1c1c1c 100%); }
+    .work-item:hover .work-thumb { transform: scale(1.05); }
+    .work-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(10,10,10,0.95) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity 0.4s;
+      display: flex; flex-direction: column;
+      justify-content: flex-end; padding: 40px;
+    }
+    .work-item:hover .work-overlay { opacity: 1; }
+    .work-tag {
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+    .work-name {
+      font-family: var(--font-display);
+      font-size: 2.2rem;
+      line-height: 1;
+      letter-spacing: 0.02em;
+    }
+    .work-desc { margin-top: 8px; font-size: 0.85rem; opacity: 0.6; }
+    .work-arrow {
+      position: absolute; top: 32px; right: 32px;
+      width: 44px; height: 44px;
+      border: 1px solid rgba(240,236,228,0.2);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.3s, transform 0.3s;
+    }
+    .work-item:hover .work-arrow { opacity: 1; transform: translateY(0); }
+
+    /* Frame overlays for visual interest */
+    .work-item::before {
+      content: '';
+      position: absolute; inset: 0;
+      border: 1px solid rgba(255,255,255,0.03);
+      z-index: 5; pointer-events: none;
+    }
+    .work-bars {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      height: 3px;
+      display: flex;
+      z-index: 6;
+    }
+    .work-bar {
+      flex: 1;
+      background: var(--accent);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.5s cubic-bezier(0.25,0.46,0.45,0.94);
+    }
+    .work-item:hover .work-bar { transform: scaleX(1); }
+    .work-bar:nth-child(2) { transition-delay: 0.05s; }
+    .work-bar:nth-child(3) { transition-delay: 0.1s; }
+
+    /* ── SKILLS ── */
+    #skills { background: var(--cream); color: var(--black); }
+    #skills .section-label { color: var(--accent); }
+    #skills .section-count { color: rgba(0,0,0,0.08); }
+    .skills-layout {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 80px;
+      align-items: start;
+    }
+    .skills-intro {
+      font-size: 1.05rem;
+      line-height: 1.8;
+      opacity: 0.65;
+    }
+    .skills-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px;
+    }
+    .skill-card {
+      background: rgba(0,0,0,0.04);
+      padding: 32px;
+      position: relative;
+      transition: background 0.3s;
+    }
+    .skill-card:hover { background: rgba(0,0,0,0.07); }
+    .skill-icon {
+      font-size: 1.5rem;
+      margin-bottom: 16px;
+    }
+    .skill-name {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      letter-spacing: 0.02em;
+      color: var(--black);
+    }
+    .skill-tools {
+      margin-top: 8px;
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      opacity: 0.45;
+      text-transform: uppercase;
+    }
+    .skill-bar-wrap {
+      margin-top: 20px;
+      height: 2px;
+      background: rgba(0,0,0,0.1);
+      position: relative;
+    }
+    .skill-bar-fill {
+      position: absolute; left: 0; top: 0; bottom: 0;
+      background: var(--accent);
+      width: 0;
+      transition: width 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    /* ── PROCESS ── */
+    #process { background: var(--black); }
+    .process-steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2px;
+    }
+    .process-step {
+      padding: 48px 36px;
+      background: #0f0f0f;
+      position: relative;
+      transition: background 0.3s;
+    }
+    .process-step:hover { background: #111; }
+    .step-num {
+      font-family: var(--font-display);
+      font-size: 5rem;
+      color: #1f1f1f;
+      line-height: 1;
+      position: absolute;
+      top: 24px; right: 24px;
+    }
+    .step-icon { font-size: 1.8rem; margin-bottom: 24px; }
+    .step-title {
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+      letter-spacing: 0.02em;
+      margin-bottom: 12px;
+    }
+    .step-desc { font-size: 0.85rem; opacity: 0.45; line-height: 1.7; }
+    .step-connector {
+      position: absolute; top: 50%; right: -1px;
+      width: 1px; height: 40%;
+      background: var(--accent);
+      transform: translateY(-50%);
+      opacity: 0.3;
+    }
+    .process-step:last-child .step-connector { display: none; }
+
+    /* ── ABOUT ── */
+    #about {
+      background: var(--black);
+      padding: 120px 48px;
+    }
+    .about-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 100px;
+      align-items: center;
+    }
+    .about-portrait {
+      position: relative;
+      aspect-ratio: 3/4;
+      background: var(--grey);
+      overflow: hidden;
+    }
+    .about-portrait::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, #1a1a1a, #0a0a0a);
+    }
+    .portrait-placeholder {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 8rem;
+      color: #2a2a2a;
+    }
+    .portrait-frame {
+      position: absolute;
+      top: -16px; right: -16px;
+      width: 60%; height: 60%;
+      border-top: 2px solid var(--accent);
+      border-right: 2px solid var(--accent);
+    }
+    .portrait-label {
+      position: absolute;
+      bottom: 24px; left: 24px;
+      background: var(--accent);
+      color: var(--black);
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      letter-spacing: 0.15em;
+      padding: 8px 16px;
+    }
+    .about-content {}
+    .about-title {
+      font-family: var(--font-display);
+      font-size: clamp(2.5rem, 4vw, 4rem);
+      line-height: 1;
+      letter-spacing: 0.01em;
+      margin-bottom: 32px;
+    }
+    .about-title span { color: var(--accent); }
+    .about-bio {
+      font-size: 1rem;
+      line-height: 1.85;
+      opacity: 0.6;
+      margin-bottom: 24px;
+    }
+    .about-tags {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      margin-top: 40px;
+    }
+    .about-tag {
+      border: 1px solid #2a2a2a;
+      padding: 8px 16px;
+      font-size: 0.72rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(240,236,228,0.5);
+      transition: border-color 0.3s, color 0.3s;
+    }
+    .about-tag:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── CONTACT ── */
+    #contact {
+      background: var(--accent);
+      color: var(--black);
+      padding: 120px 48px;
+      position: relative;
+      overflow: hidden;
+    }
+    #contact::before {
+      content: 'CONTACT';
+      position: absolute;
+      font-family: var(--font-display);
+      font-size: 18vw;
+      color: rgba(0,0,0,0.06);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      white-space: nowrap;
+      pointer-events: none;
+      letter-spacing: -0.02em;
+    }
+    .contact-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 100px;
+      align-items: center;
+      position: relative; z-index: 1;
+    }
+    .contact-title {
+      font-family: var(--font-display);
+      font-size: clamp(3rem, 6vw, 6rem);
+      line-height: 0.95;
+      letter-spacing: 0.01em;
+    }
+    .contact-sub {
+      margin-top: 24px;
+      font-size: 1rem;
+      opacity: 0.65;
+      line-height: 1.7;
+    }
+    .contact-email {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      letter-spacing: 0.05em;
+      border-bottom: 2px solid rgba(0,0,0,0.3);
+      padding-bottom: 4px;
+      display: inline-block;
+      margin-top: 32px;
+      text-decoration: none;
+      color: var(--black);
+      transition: border-color 0.3s;
+    }
+    .contact-email:hover { border-color: var(--black); }
+    .contact-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .form-group { display: flex; flex-direction: column; gap: 8px; }
+    .form-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      opacity: 0.5;
+    }
+    .form-input, .form-textarea {
+      background: rgba(0,0,0,0.1);
+      border: none;
+      border-bottom: 1px solid rgba(0,0,0,0.25);
+      padding: 14px 0;
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      color: var(--black);
+      outline: none;
+      transition: border-color 0.3s;
+      width: 100%;
+    }
+    .form-input::placeholder, .form-textarea::placeholder { opacity: 0.4; color: var(--black); }
+    .form-input:focus, .form-textarea:focus { border-color: var(--black); }
+    .form-textarea { resize: none; height: 100px; }
+    .btn-dark {
+      background: var(--black);
+      color: var(--white);
+      border: none;
+      padding: 16px 40px;
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      cursor: pointer;
+      align-self: flex-start;
+      transition: opacity 0.3s, transform 0.2s;
+      clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+    }
+    .btn-dark:hover { opacity: 0.85; transform: translateY(-2px); }
+
+    /* ── FOOTER ── */
+    footer {
+      background: #050505;
+      padding: 40px 48px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid #111;
+    }
+    .footer-logo {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      letter-spacing: 0.05em;
+    }
+    .footer-logo span { color: var(--accent); }
+    .footer-copy {
+      font-size: 0.7rem;
+      opacity: 0.25;
+      letter-spacing: 0.1em;
+    }
+    .footer-socials {
+      display: flex; gap: 24px;
+    }
+    .social-link {
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--white);
+      text-decoration: none;
+      opacity: 0.3;
+      transition: opacity 0.3s;
+    }
+    .social-link:hover { opacity: 1; }
+
+    /* ── SCROLL INDICATOR ── */
+    .scroll-line {
+      position: fixed;
+      top: 0; left: 0;
+      width: 2px;
+      background: var(--accent);
+      z-index: 999;
+      transition: height 0.05s;
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(32px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes ticker {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      nav { padding: 20px 24px; }
+      .nav-links { display: none; }
+      .hero { grid-template-columns: 1fr; }
+      .hero-right { display: none; }
+      .hero-left { padding: 100px 24px 80px; }
+      section { padding: 80px 24px; }
+      .stats { grid-template-columns: 1fr 1fr; }
+      .work-grid { grid-template-columns: 1fr; }
+      .work-item.wide { grid-column: 1; }
+      .skills-layout, .about-layout, .contact-layout { grid-template-columns: 1fr; }
+      .process-steps { grid-template-columns: 1fr 1fr; }
+      footer { flex-direction: column; gap: 16px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Scroll progress line -->
+  <div class="scroll-line" id="scrollLine"></div>
+
+  <!-- Custom cursor -->
+  <div class="cursor" id="cursor"></div>
+  <div class="cursor-ring" id="cursorRing"></div>
+
+  <!-- NAV -->
+  <nav>
+    <a href="#" class="nav-logo">ALEX<span>.</span>R</a>
+    <ul class="nav-links">
+      <li><a href="#work">Work</a></li>
+      <li><a href="#skills">Skills</a></li>
+      <li><a href="#process">Process</a></li>
+      <li><a href="#about">About</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-left">
+      <p class="hero-eyebrow">✦ Available for projects — 2025</p>
+      <h1 class="hero-title">
+        VIDEO
+        <span class="line-accent">EDITOR</span>
+        &amp; DIRECTOR
+      </h1>
+      <p class="hero-subtitle">Crafting visual narratives that move audiences. From cinematic brand films to fast-paced social content — every frame with intention.</p>
+      <div class="hero-cta">
+        <a href="#work" class="btn-primary">View My Work</a>
+        <a href="#contact" class="btn-ghost">Let's Collaborate</a>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="hero-reel">
+        <div class="reel-grid">
+          <div class="reel-cell"></div>
+          <div class="reel-cell"></div>
+          <div class="reel-cell"></div>
+          <div class="reel-cell"></div>
+          <div class="reel-cell"></div>
+        </div>
+        <div class="play-btn">
+          <svg width="18" height="20" viewBox="0 0 18 20"><path d="M1 1l16 9-16 9V1z"/></svg>
+        </div>
+      </div>
+      <div class="hero-ticker">
+        <div class="ticker-inner">
+          <span class="ticker-item">BRAND FILMS</span>
+          <span class="ticker-item">MUSIC VIDEOS</span>
+          <span class="ticker-item">DOCUMENTARIES</span>
+          <span class="ticker-item">SOCIAL CONTENT</span>
+          <span class="ticker-item">COMMERCIAL EDITS</span>
+          <span class="ticker-item">MOTION GRAPHICS</span>
+          <!-- repeat for seamless loop -->
+          <span class="ticker-item">BRAND FILMS</span>
+          <span class="ticker-item">MUSIC VIDEOS</span>
+          <span class="ticker-item">DOCUMENTARIES</span>
+          <span class="ticker-item">SOCIAL CONTENT</span>
+          <span class="ticker-item">COMMERCIAL EDITS</span>
+          <span class="ticker-item">MOTION GRAPHICS</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <div class="stats" id="statsSection">
+    <div class="stat-item">
+      <div class="stat-num"><span class="count-up" data-target="6">0</span><span>+</span></div>
+      <div class="stat-label">Years Experience</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num"><span class="count-up" data-target="120">0</span><span>+</span></div>
+      <div class="stat-label">Projects Delivered</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num"><span class="count-up" data-target="45">0</span><span>M+</span></div>
+      <div class="stat-label">Views Generated</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num"><span class="count-up" data-target="30">0</span><span>+</span></div>
+      <div class="stat-label">Brands Worked With</div>
+    </div>
+  </div>
+
+  <!-- WORK -->
+  <section id="work">
+    <div class="section-header">
+      <div>
+        <p class="section-label">✦ Selected Projects</p>
+        <h2 class="section-title">FEATURED<br>WORK</h2>
+      </div>
+      <div class="section-count">03</div>
+    </div>
+    <div class="work-grid">
+
+      <div class="work-item wide">
+        <div class="work-thumb" style="font-size:3rem; color:#1a1a1a; letter-spacing:0.1em; background: linear-gradient(135deg,#111 0%,#1c1c1c 100%)">
+          ▶ SHOWREEL 2024
+        </div>
+        <div class="work-overlay">
+          <div class="work-tag">Brand Film • 2024</div>
+          <div class="work-name">ANNUAL SHOWREEL</div>
+          <div class="work-desc">A curated selection of the best work from the past year across all genres and clients.</div>
+        </div>
+        <div class="work-arrow">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="white" stroke-width="1.5"><path d="M2 12L12 2M12 2H5M12 2v7"/></svg>
+        </div>
+        <div class="work-bars">
+          <div class="work-bar"></div><div class="work-bar"></div><div class="work-bar"></div>
+        </div>
+      </div>
+
+      <div class="work-item">
+        <div class="work-thumb" style="background: linear-gradient(135deg,#0e0e0e 0%,#181818 100%)">
+          ◆
+        </div>
+        <div class="work-overlay">
+          <div class="work-tag">Music Video • 2024</div>
+          <div class="work-name">NEON DRIFT</div>
+          <div class="work-desc">High-concept music video with cinematic colour grading and motion tracked VFX.</div>
+        </div>
+        <div class="work-arrow">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="white" stroke-width="1.5"><path d="M2 12L12 2M12 2H5M12 2v7"/></svg>
+        </div>
+        <div class="work-bars">
+          <div class="work-bar"></div><div class="work-bar"></div><div class="work-bar"></div>
+        </div>
+      </div>
+
+      <div class="work-item">
+        <div class="work-thumb" style="background: linear-gradient(135deg,#121212 0%,#1d1d1d 100%)">
+          ▲
+        </div>
+        <div class="work-overlay">
+          <div class="work-tag">Documentary • 2023</div>
+          <div class="work-name">MADE IN THE CITY</div>
+          <div class="work-desc">Long-form documentary on urban artists, cut to a tight 22-minute narrative arc.</div>
+        </div>
+        <div class="work-arrow">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="white" stroke-width="1.5"><path d="M2 12L12 2M12 2H5M12 2v7"/></svg>
+        </div>
+        <div class="work-bars">
+          <div class="work-bar"></div><div class="work-bar"></div><div class="work-bar"></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- SKILLS -->
+  <section id="skills">
+    <div class="section-header">
+      <div>
+        <p class="section-label">✦ What I Bring</p>
+        <h2 class="section-title">SKILLS &amp;<br>TOOLS</h2>
+      </div>
+      <div class="section-count" style="color:rgba(0,0,0,0.08)">06</div>
+    </div>
+    <div class="skills-layout">
+      <div>
+        <p class="skills-intro">
+          Six years of hands-on editing across narrative, commercial, and documentary work. I don't just cut footage — I build stories that land.
+        </p>
+      </div>
+      <div class="skills-grid">
+        <div class="skill-card">
+          <div class="skill-icon">🎬</div>
+          <div class="skill-name">VIDEO EDITING</div>
+          <div class="skill-tools">Premiere Pro · DaVinci Resolve</div>
+          <div class="skill-bar-wrap"><div class="skill-bar-fill" data-width="96"></div></div>
+        </div>
+        <div class="skill-card">
+          <div class="skill-icon">🎨</div>
+          <div class="skill-name">COLOUR GRADE</div>
+          <div class="skill-tools">DaVinci · Lumetri</div>
+          <div class="skill-bar-wrap"><div class="skill-bar-fill" data-width="90"></div></div>
+        </div>
+        <div class="skill-card">
+          <div class="skill-icon">✨</div>
+          <div class="skill-name">MOTION GFX</div>
+          <div class="skill-tools">After Effects · Motion</div>
+          <div class="skill-bar-wrap"><div class="skill-bar-fill" data-width="82"></div></div>
+        </div>
+        <div class="skill-card">
+          <div class="skill-icon">🎵</div>
+          <div class="skill-name">SOUND DESIGN</div>
+          <div class="skill-tools">Audition · Fairlight</div>
+          <div class="skill-bar-wrap"><div class="skill-bar-fill" data-width="75"></div></div>
+        </div>
+        <div class="skill-card">
+          <div class="skill-icon">📱</div>
+          <div class="skill-name">SOCIAL CONTENT</div>
+          <div class="skill-tools">CapCut · Reels · TikTok</div>
+          <div class="skill-bar-wrap"><div class="skill-bar-fill" data-width="95"></div></div>
+        </div>
+        <div class="skill-card">
+          <div class="skill-icon">🎥</div>
+          <div class="skill-name">CINEMATOGRAPHY</div>
+          <div class="skill-tools">Sony FX · BMPCC</div>
+          <div class="skill-bar-wrap"><div class="skill-bar-fill" data-width="70"></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROCESS -->
+  <section id="process">
+    <div class="section-header">
+      <div>
+        <p class="section-label">✦ How I Work</p>
+        <h2 class="section-title">MY<br>PROCESS</h2>
+      </div>
+      <div class="section-count">04</div>
+    </div>
+    <div class="process-steps">
+      <div class="process-step">
+        <div class="step-num">01</div>
+        <div class="step-icon">💬</div>
+        <div class="step-title">BRIEF</div>
+        <div class="step-desc">Deep dive into your vision, goals, and audience. I listen before I cut.</div>
+        <div class="step-connector"></div>
+      </div>
+      <div class="process-step">
+        <div class="step-num">02</div>
+        <div class="step-icon">📋</div>
+        <div class="step-title">STRATEGY</div>
+        <div class="step-desc">Structure the story arc, select music, build the edit roadmap.</div>
+        <div class="step-connector"></div>
+      </div>
+      <div class="process-step">
+        <div class="step-num">03</div>
+        <div class="step-icon">✂️</div>
+        <div class="step-title">EDIT</div>
+        <div class="step-desc">Rough cut → fine cut → grade → audio mix. Tight feedback loops.</div>
+        <div class="step-connector"></div>
+      </div>
+      <div class="process-step">
+        <div class="step-num">04</div>
+        <div class="step-icon">🚀</div>
+        <div class="step-title">DELIVER</div>
+        <div class="step-desc">Platform-optimised exports, organised project files, full handoff.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section id="about">
+    <div class="about-layout">
+      <div class="about-portrait">
+        <div class="portrait-placeholder">👤</div>
+        <div class="portrait-frame"></div>
+        <div class="portrait-label">ALEX RIVERA</div>
+      </div>
+      <div class="about-content">
+        <h2 class="about-title">BEHIND THE<br><span>TIMELINE</span></h2>
+        <p class="about-bio">
+          I'm Alex — a freelance video editor and director based in Los Angeles with 6+ years of experience turning raw footage into stories that move people.
+        </p>
+        <p class="about-bio">
+          I've worked with indie filmmakers, Fortune 500 brands, and everything in between. My approach is collaborative — I treat every project as a creative partnership, not just a service.
+        </p>
+        <p class="about-bio">
+          When I'm not in the edit suite, I'm usually on set, at a screening, or obsessing over film scores.
+        </p>
+        <div class="about-tags">
+          <span class="about-tag">Narrative</span>
+          <span class="about-tag">Commercial</span>
+          <span class="about-tag">Documentary</span>
+          <span class="about-tag">Music Video</span>
+          <span class="about-tag">Short Film</span>
+          <span class="about-tag">Social Media</span>
+          <span class="about-tag">Corporate</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section id="contact">
+    <div class="contact-layout">
+      <div>
+        <h2 class="contact-title">LET'S MAKE<br>SOMETHING<br>GREAT</h2>
+        <p class="contact-sub">Have a project in mind? I'm currently available for new work. Drop me a message or reach out directly.</p>
+        <a href="mailto:hello@alexrivera.com" class="contact-email">HELLO@ALEXRIVERA.COM</a>
+      </div>
+      <div class="contact-form">
+        <div class="form-group">
+          <label class="form-label">Your Name</label>
+          <input type="text" class="form-input" placeholder="Jane Smith">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input type="email" class="form-input" placeholder="jane@company.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Project Brief</label>
+          <textarea class="form-textarea" placeholder="Tell me about your project…"></textarea>
+        </div>
+        <button class="btn-dark">Send Message →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-logo">ALEX<span>.</span>R</div>
+    <div class="footer-copy">© 2025 Alex Rivera. All rights reserved.</div>
+    <div class="footer-socials">
+      <a href="#" class="social-link">Vimeo</a>
+      <a href="#" class="social-link">Instagram</a>
+      <a href="#" class="social-link">LinkedIn</a>
+    </div>
+  </footer>
+
+  <script>
+    // ── Custom Cursor ──
+    const cursor = document.getElementById('cursor');
+    const cursorRing = document.getElementById('cursorRing');
+    let mouseX = 0, mouseY = 0;
+    document.addEventListener('mousemove', e => {
+      mouseX = e.clientX; mouseY = e.clientY;
+      cursor.style.left = mouseX + 'px';
+      cursor.style.top = mouseY + 'px';
+      setTimeout(() => {
+        cursorRing.style.left = mouseX + 'px';
+        cursorRing.style.top = mouseY + 'px';
+      }, 80);
+    });
+    document.querySelectorAll('a, button, .work-item').forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        cursor.style.width = '20px'; cursor.style.height = '20px';
+        cursorRing.style.width = '56px'; cursorRing.style.height = '56px';
+      });
+      el.addEventListener('mouseleave', () => {
+        cursor.style.width = '12px'; cursor.style.height = '12px';
+        cursorRing.style.width = '36px'; cursorRing.style.height = '36px';
+      });
+    });
+
+    // ── Scroll Progress Line ──
+    const scrollLine = document.getElementById('scrollLine');
+    window.addEventListener('scroll', () => {
+      const scrolled = window.scrollY;
+      const total = document.documentElement.scrollHeight - window.innerHeight;
+      const pct = (scrolled / total) * 100;
+      scrollLine.style.height = pct + 'vh';
+    });
+
+    // ── Count-up Numbers ──
+    const countEls = document.querySelectorAll('.count-up');
+    const countObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const el = entry.target;
+          const target = parseInt(el.dataset.target);
+          let start = 0;
+          const duration = 1500;
+          const step = target / (duration / 16);
+          const timer = setInterval(() => {
+            start += step;
+            if (start >= target) { start = target; clearInterval(timer); }
+            el.textContent = Math.floor(start);
+          }, 16);
+          countObserver.unobserve(el);
+        }
+      });
+    }, { threshold: 0.5 });
+    countEls.forEach(el => countObserver.observe(el));
+
+    // ── Skill Bar Animations ──
+    const skillBars = document.querySelectorAll('.skill-bar-fill');
+    const barObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.width = entry.target.dataset.width + '%';
+          barObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.3 });
+    skillBars.forEach(bar => barObserver.observe(bar));
+
+    // ── Scroll-reveal for stat items ──
+    const statItems = document.querySelectorAll('.stat-item');
+    const statObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.animationPlayState = 'running';
+        }
+      });
+    }, { threshold: 0.2 });
+    statItems.forEach(item => {
+      item.style.animationPlayState = 'paused';
+      statObserver.observe(item);
+    });
+  </script>
+</body>
+</html>
